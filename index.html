@@ -28,22 +28,50 @@
       color: #555;
       font-size: 0.9em;
     }
+    #formPopup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 15px;
+      border: 2px solid #ccc;
+      z-index: 999;
+      display: none;
+    }
+    #formPopup label {
+      display: block;
+      margin-bottom: 5px;
+    }
   </style>
 </head>
 <body>
   <div id="map"></div>
   <div id="log"><strong>🧻 打卡紀錄：</strong><br></div>
 
+  <div id="formPopup">
+    <label>廁所名稱：<input type="text" id="toiletName" /></label>
+    <label>圖示：
+      <select id="iconSelect">
+        <option value="toilet">🚽 馬桶</option>
+        <option value="smile">😄 笑臉</option>
+        <option value="poop">💩 大便</option>
+      </select>
+    </label>
+    <button onclick="confirmAdd()">新增</button>
+    <button onclick="cancelAdd()">取消</button>
+  </div>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     const map = L.map('map').setView([25.033964, 121.564468], 16);
+    let clickedLatLng = null;
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // 預設圖示
     const icons = {
       toilet: L.icon({
         iconUrl: 'https://i.imgur.com/OZ7UjN8.png',
@@ -97,6 +125,22 @@
         .bindPopup(`<b>${name}</b><br><button onclick="addLog('${name}')">我要打卡</button>`);
     }
 
+    function saveCustomToilet(name, lat, lng, iconKey) {
+      const list = JSON.parse(localStorage.getItem('customToilets') || '[]');
+      list.push({ name, lat, lng, iconKey });
+      localStorage.setItem('customToilets', JSON.stringify(list));
+    }
+
+    function loadCustomToilets() {
+      const list = JSON.parse(localStorage.getItem('customToilets') || '[]');
+      list.forEach(t => {
+        const icon = icons[t.iconKey] || icons.toilet;
+        addToiletMarker(t.lat, t.lng, t.name, icon);
+      });
+    }
+
+    loadCustomToilets();
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(pos => {
         const lat = pos.coords.latitude;
@@ -123,32 +167,33 @@
       });
     }
 
+    // 點地圖出現表單
     map.on('click', function(e) {
-      const name = prompt("📍 請輸入廁所名稱：");
-      if (!name) return;
-
-      const choice = prompt("🖼️ 請輸入圖示類型：toilet / smile / poop").toLowerCase();
-      const selectedIcon = icons[choice] || icons.toilet;
-
-      addToiletMarker(e.latlng.lat, e.latlng.lng, name, selectedIcon);
-      saveCustomToilet(name, e.latlng.lat, e.latlng.lng, choice);
+      clickedLatLng = e.latlng;
+      document.getElementById('formPopup').style.display = 'block';
     });
 
-    function saveCustomToilet(name, lat, lng, iconKey) {
-      const list = JSON.parse(localStorage.getItem('customToilets') || '[]');
-      list.push({ name, lat, lng, iconKey });
-      localStorage.setItem('customToilets', JSON.stringify(list));
+    function confirmAdd() {
+      const name = document.getElementById('toiletName').value.trim();
+      const iconKey = document.getElementById('iconSelect').value;
+
+      if (!name) {
+        alert("請輸入名稱！");
+        return;
+      }
+
+      const icon = icons[iconKey] || icons.toilet;
+      addToiletMarker(clickedLatLng.lat, clickedLatLng.lng, name, icon);
+      saveCustomToilet(name, clickedLatLng.lat, clickedLatLng.lng, iconKey);
+
+      document.getElementById('formPopup').style.display = 'none';
+      document.getElementById('toiletName').value = '';
     }
 
-    function loadCustomToilets() {
-      const list = JSON.parse(localStorage.getItem('customToilets') || '[]');
-      list.forEach(t => {
-        const icon = icons[t.iconKey] || icons.toilet;
-        addToiletMarker(t.lat, t.lng, t.name, icon);
-      });
+    function cancelAdd() {
+      document.getElementById('formPopup').style.display = 'none';
+      document.getElementById('toiletName').value = '';
     }
-
-    loadCustomToilets();
   </script>
 </body>
 </html>
