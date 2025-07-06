@@ -36,6 +36,13 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
+    const map = L.map('map').setView([25.033964, 121.564468], 16);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
     const log = document.getElementById('log');
 
     function addLog(name) {
@@ -45,7 +52,6 @@
       entry.innerHTML = `🚽 ${name} — <time>${time}</time>`;
       log.appendChild(entry);
 
-      // 存到 localStorage
       const history = JSON.parse(localStorage.getItem('toiletLogs') || '[]');
       history.push({ name, time });
       localStorage.setItem('toiletLogs', JSON.stringify(history));
@@ -62,13 +68,6 @@
     }
 
     loadLogs();
-
-    const map = L.map('map').setView([25.033964, 121.564468], 16);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap'
-    }).addTo(map);
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(pos => {
@@ -89,7 +88,7 @@
         ];
 
         toilets.forEach(t => {
-          const marker = L.marker([t.lat, t.lng])
+          L.marker([t.lat, t.lng])
             .addTo(map)
             .bindPopup(`
               <b>${t.name}</b><br>
@@ -102,6 +101,34 @@
     } else {
       alert("你的瀏覽器不支援定位功能");
     }
+
+    // 點擊新增自訂廁所點
+    map.on('click', function(e) {
+      const name = prompt("請輸入你要新增的廁所名稱：");
+      if (name) {
+        const marker = L.marker([e.latlng.lat, e.latlng.lng])
+          .addTo(map)
+          .bindPopup(`<b>${name}</b><br><button onclick="addLog('${name}')">我要打卡</button>`);
+        saveCustomToilet(name, e.latlng.lat, e.latlng.lng);
+      }
+    });
+
+    function saveCustomToilet(name, lat, lng) {
+      const list = JSON.parse(localStorage.getItem('customToilets') || '[]');
+      list.push({ name, lat, lng });
+      localStorage.setItem('customToilets', JSON.stringify(list));
+    }
+
+    function loadCustomToilets() {
+      const list = JSON.parse(localStorage.getItem('customToilets') || '[]');
+      list.forEach(t => {
+        L.marker([t.lat, t.lng])
+          .addTo(map)
+          .bindPopup(`<b>${t.name}</b><br><button onclick="addLog('${t.name}')">我要打卡</button>`);
+      });
+    }
+
+    loadCustomToilets();
   </script>
 </body>
 </html>
