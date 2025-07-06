@@ -173,22 +173,35 @@
       document.getElementById('formPopup').style.display = 'block';
     });
 
-    function confirmAdd() {
-      const name = document.getElementById('toiletName').value.trim();
-      const iconKey = document.getElementById('iconSelect').value;
+   function confirmAdd() {
+  const name = document.getElementById('toiletName').value.trim();
+  const iconKey = document.getElementById('iconSelect').value;
 
-      if (!name) {
-        alert("請輸入名稱！");
-        return;
-      }
+  if (!name) {
+    alert("請輸入名稱！");
+    return;
+  }
 
-      const icon = icons[iconKey] || icons.toilet;
-      addToiletMarker(clickedLatLng.lat, clickedLatLng.lng, name, icon);
-      saveCustomToilet(name, clickedLatLng.lat, clickedLatLng.lng, iconKey);
+  if (!clickedLatLng) {
+    alert("點擊地圖位置後才能新增！");
+    return;
+  }
 
-      document.getElementById('formPopup').style.display = 'none';
-      document.getElementById('toiletName').value = '';
-    }
+  const icon = icons[iconKey] || icons.toilet;
+
+  try {
+    addToiletMarker(clickedLatLng.lat, clickedLatLng.lng, name, icon);
+    saveCustomToilet(name, clickedLatLng.lat, clickedLatLng.lng, iconKey);
+
+    // 清空表單與 popup
+    document.getElementById('formPopup').style.display = 'none';
+    document.getElementById('toiletName').value = '';
+    clickedLatLng = null;
+  } catch (err) {
+    alert("新增時出錯了：" + err.message);
+    console.error(err);
+  }
+}
 
     function cancelAdd() {
       document.getElementById('formPopup').style.display = 'none';
