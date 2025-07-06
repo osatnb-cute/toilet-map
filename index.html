@@ -43,6 +43,28 @@
       attribution: '© OpenStreetMap'
     }).addTo(map);
 
+    // 預設圖示
+    const icons = {
+      toilet: L.icon({
+        iconUrl: 'https://i.imgur.com/OZ7UjN8.png',
+        iconSize: [40, 40],
+        iconAnchor: [20, 40],
+        popupAnchor: [0, -40]
+      }),
+      smile: L.icon({
+        iconUrl: 'https://i.imgur.com/0DweZzF.png',
+        iconSize: [40, 40],
+        iconAnchor: [20, 40],
+        popupAnchor: [0, -40]
+      }),
+      poop: L.icon({
+        iconUrl: 'https://i.imgur.com/G7v5vIp.png',
+        iconSize: [40, 40],
+        iconAnchor: [20, 40],
+        popupAnchor: [0, -40]
+      }),
+    };
+
     const log = document.getElementById('log');
 
     function addLog(name) {
@@ -69,6 +91,12 @@
 
     loadLogs();
 
+    function addToiletMarker(lat, lng, name, icon) {
+      L.marker([lat, lng], { icon })
+        .addTo(map)
+        .bindPopup(`<b>${name}</b><br><button onclick="addLog('${name}')">我要打卡</button>`);
+    }
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(pos => {
         const lat = pos.coords.latitude;
@@ -88,43 +116,35 @@
         ];
 
         toilets.forEach(t => {
-          L.marker([t.lat, t.lng])
-            .addTo(map)
-            .bindPopup(`
-              <b>${t.name}</b><br>
-              <button onclick="addLog('${t.name}')">我要打卡</button>
-            `);
+          addToiletMarker(t.lat, t.lng, t.name, icons.toilet);
         });
       }, () => {
         alert("無法取得 GPS 位置");
       });
-    } else {
-      alert("你的瀏覽器不支援定位功能");
     }
 
-    // 點擊新增自訂廁所點
     map.on('click', function(e) {
-      const name = prompt("請輸入你要新增的廁所名稱：");
-      if (name) {
-        const marker = L.marker([e.latlng.lat, e.latlng.lng])
-          .addTo(map)
-          .bindPopup(`<b>${name}</b><br><button onclick="addLog('${name}')">我要打卡</button>`);
-        saveCustomToilet(name, e.latlng.lat, e.latlng.lng);
-      }
+      const name = prompt("📍 請輸入廁所名稱：");
+      if (!name) return;
+
+      const choice = prompt("🖼️ 請輸入圖示類型：toilet / smile / poop").toLowerCase();
+      const selectedIcon = icons[choice] || icons.toilet;
+
+      addToiletMarker(e.latlng.lat, e.latlng.lng, name, selectedIcon);
+      saveCustomToilet(name, e.latlng.lat, e.latlng.lng, choice);
     });
 
-    function saveCustomToilet(name, lat, lng) {
+    function saveCustomToilet(name, lat, lng, iconKey) {
       const list = JSON.parse(localStorage.getItem('customToilets') || '[]');
-      list.push({ name, lat, lng });
+      list.push({ name, lat, lng, iconKey });
       localStorage.setItem('customToilets', JSON.stringify(list));
     }
 
     function loadCustomToilets() {
       const list = JSON.parse(localStorage.getItem('customToilets') || '[]');
       list.forEach(t => {
-        L.marker([t.lat, t.lng])
-          .addTo(map)
-          .bindPopup(`<b>${t.name}</b><br><button onclick="addLog('${t.name}')">我要打卡</button>`);
+        const icon = icons[t.iconKey] || icons.toilet;
+        addToiletMarker(t.lat, t.lng, t.name, icon);
       });
     }
 
