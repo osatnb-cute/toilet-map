@@ -11,7 +11,7 @@
       background: #fff3e6;
     }
     #map {
-      height: 80vh;
+      height: 70vh;
       width: 100%;
     }
     #log {
@@ -33,8 +33,8 @@
       background: #e6f7ff;
       border-bottom: 2px dashed #aaa;
     }
-    #user span {
-      font-weight: bold;
+    #nicknameBox {
+      margin-top: 5px;
     }
   </style>
 </head>
@@ -43,6 +43,10 @@
     <button id="loginBtn">🔐 登入</button>
     <button id="logoutBtn" style="display:none">🚪 登出</button>
     <span id="userInfo">尚未登入</span>
+    <div id="nicknameBox" style="display:none">
+      👤 暱稱：<input id="nicknameInput" placeholder="輸入你的暱稱" />
+      <button id="saveNickBtn">儲存</button>
+    </div>
   </div>
   <div id="map"></div>
   <div id="log"><strong>🧻 打卡紀錄（公開）：</strong><br></div>
@@ -72,14 +76,18 @@
     const userInfo = document.getElementById('userInfo');
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
+    const nicknameBox = document.getElementById('nicknameBox');
+    const nicknameInput = document.getElementById('nicknameInput');
+    const saveNickBtn = document.getElementById('saveNickBtn');
 
     let currentUser = null;
+    let currentNickname = "匿名";
 
     const funnyIcons = [
-      "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f6bd.svg", // toilet
-      "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4a9.svg", // poop
-      "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f9fb.svg", // paper
-      "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f6c1.svg"  // bathtub
+      "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f6bd.svg",
+      "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4a9.svg",
+      "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f9fb.svg",
+      "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f6c1.svg"
     ];
 
     function randomIconUrl() {
@@ -137,7 +145,7 @@
       const logData = {
         name, lat, lng, time, comment,
         public: isPublic,
-        user: currentUser.displayName || currentUser.email
+        user: currentNickname
       };
 
       db.collection("toiletLogs").add(logData).then(() => {
@@ -155,98 +163,45 @@
       auth.signOut();
     };
 
+    saveNickBtn.onclick = () => {
+      const newNick = nicknameInput.value.trim();
+      if (!newNick) return alert("暱稱不能為空");
+      db.collection("users").doc(currentUser.uid).set({ nickname: newNick }).then(() => {
+        currentNickname = newNick;
+        alert("✅ 暱稱儲存成功！");
+      });
+    };
+
+    function loadNickname(user) {
+      db.collection("users").doc(user.uid).get().then(doc => {
+        if (doc.exists) {
+          currentNickname = doc.data().nickname || "匿名";
+          nicknameInput.value = currentNickname;
+        } else {
+          currentNickname = user.displayName || user.email || "匿名";
+          nicknameInput.value = "";
+        }
+      });
+    }
+
     auth.onAuthStateChanged(user => {
       if (user) {
         currentUser = user;
         loginBtn.style.display = 'none';
         logoutBtn.style.display = 'inline';
+        nicknameBox.style.display = 'block';
         userInfo.textContent = `👤 已登入：${user.displayName || user.email}`;
+        loadNickname(user);
       } else {
         currentUser = null;
+        currentNickname = "匿名";
         loginBtn.style.display = 'inline';
         logoutBtn.style.display = 'none';
+        nicknameBox.style.display = 'none';
         userInfo.textContent = "尚未登入";
       }
     });
   </script>
 </body>
-</html>      "https://em-content.zobj.net/thumbs/120/twitter/322/poop_1f4a9.png",
-      "https://em-content.zobj.net/thumbs/120/twitter/322/roll-of-paper_1f9fb.png",
-      "https://em-content.zobj.net/thumbs/120/twitter/322/bathtub_1f6c1.png"
-    ];
-
-    function randomIconUrl() {
-      const i = Math.floor(Math.random() * funnyIcons.length);
-      return funnyIcons[i];
-    }
-
-    function showPublicLogs() {
-      db.collection("toiletLogs").where("public", "==", true).get().then(snapshot => {
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const entry = document.createElement("div");
-          entry.className = "log-entry";
-          entry.innerHTML = `🚽 ${data.name} — <time>${data.time}</time><br>💬 ${data.comment || "（沒留言）"}`;
-          log.appendChild(entry);
-
-          const icon = L.icon({
-            iconUrl: randomIconUrl(),
-            iconSize: [32, 32],
-          });
-
-          L.marker([data.lat, data.lng], { icon })
-            .addTo(map)
-            .bindPopup(`<b>${data.name}</b><br>${data.comment || "沒留言"}<br><i>${data.time}</i>`);
-        });
-      });
-    }
-
-    const map = L.map('map').setView([25.033964, 121.564468], 16);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap'
-    }).addTo(map);
-
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(pos => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-
-        map.setView([lat, lng], 17);
-
-        L.marker([lat, lng])
-          .addTo(map)
-          .bindPopup("你在這裡 💩")
-          .openPopup();
-
-        showPublicLogs();
-
-      }, () => {
-        alert("無法取得 GPS 位置");
-      });
-    } else {
-      alert("你的瀏覽器不支援定位功能");
-    }
-
-    // 🆕 新增：點擊地圖可新增打卡點
-    map.on('click', function (e) {
-      const lat = e.latlng.lat;
-      const lng = e.latlng.lng;
-
-      const name = prompt("💬 請輸入這個廁所的名稱（例如：廢柴公廁）");
-      if (!name) return;
-
-      const comment = prompt("🧻 想留言嗎？（可以不填）");
-      const isPublic = confirm("👀 要公開這次打卡給其他人看到嗎？");
-      const time = new Date().toLocaleString();
-
-      const logData = { name, lat, lng, time, comment, public: isPublic };
-      db.collection("toiletLogs").add(logData).then(() => {
-        alert("✅ 打卡成功！");
-        if (isPublic) location.reload();
-      });
-    });
-  </script>
-</body>
 </html>
+
