@@ -256,39 +256,4 @@
     }
   </script>
 </body>
-</html>     });
-    };
-
-    function loadNickname(user) {
-      db.collection("users").doc(user.uid).get().then(doc => {
-        if (doc.exists) {
-          currentNickname = doc.data().nickname || "匿名";
-          nicknameInput.value = currentNickname;
-        } else {
-          currentNickname = user.displayName || user.email || "匿名";
-          nicknameInput.value = "";
-        }
-      });
-    }
-
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        currentUser = user;
-        loginBtn.style.display = 'none';
-        logoutBtn.style.display = 'inline';
-        nicknameBox.style.display = 'block';
-        userInfo.textContent = `👤 已登入：${user.displayName || user.email}`;
-        loadNickname(user);
-      } else {
-        currentUser = null;
-        currentNickname = "匿名";
-        loginBtn.style.display = 'inline';
-        logoutBtn.style.display = 'none';
-        nicknameBox.style.display = 'none';
-        userInfo.textContent = "尚未登入";
-      }
-    });
-  </script>
-</body>
 </html>
-
