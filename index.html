@@ -2,6 +2,9 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ffb3ec">
+  <link rel="manifest" href="manifest.json">
   <title>💩 ToiMap 打卡地圖</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
@@ -94,7 +97,6 @@
   </div>
 
   <div id="map"></div>
-
   <div id="log"><strong>🧻 打卡紀錄（公開）：</strong><br></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -214,6 +216,47 @@
         currentNickname = newNick;
         alert("✅ 暱稱儲存成功！");
       });
+    };
+
+    function loadNickname(user) {
+      db.collection("users").doc(user.uid).get().then(doc => {
+        if (doc.exists) {
+          currentNickname = doc.data().nickname || "匿名";
+          nicknameInput.value = currentNickname;
+        } else {
+          currentNickname = user.displayName || user.email || "匿名";
+          nicknameInput.value = "";
+        }
+      });
+    }
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        currentUser = user;
+        loginBtn.style.display = 'none';
+        logoutBtn.style.display = 'inline';
+        nicknameBox.style.display = 'block';
+        userInfo.textContent = `👤 已登入：${user.displayName || user.email}`;
+        loadNickname(user);
+      } else {
+        currentUser = null;
+        currentNickname = "匿名";
+        loginBtn.style.display = 'inline';
+        logoutBtn.style.display = 'none';
+        nicknameBox.style.display = 'none';
+        userInfo.textContent = "尚未登入";
+      }
+    });
+
+    // PWA 安裝
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js').then(() => {
+        console.log('✅ Service Worker 已註冊');
+      });
+    }
+  </script>
+</body>
+</html>     });
     };
 
     function loadNickname(user) {
