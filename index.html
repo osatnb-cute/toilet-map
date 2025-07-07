@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#ffb3ec">
   <link rel="manifest" href="manifest.json">
-  <title>💩 ToiMap 打卡地圖</title>
+  <title>LooLoop</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     body {
@@ -82,7 +82,7 @@
   </style>
 </head>
 <body>
-  <header>💩 ToiMap 打卡地圖 - 可愛風</header>
+  <header>LooLoop</header>
 
   <div id="user">
     <div>
@@ -129,16 +129,10 @@
     let currentUser = null;
     let currentNickname = "匿名";
 
-    const funnyIcons = [
-      "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f6bd.svg",
-      "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4a9.svg",
-      "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f9fb.svg",
-      "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f6c1.svg"
-    ];
-
-    function randomIconUrl() {
-      return funnyIcons[Math.floor(Math.random() * funnyIcons.length)];
-    }
+    const customIcon = L.icon({
+      iconUrl: "https://cdn-icons-png.flaticon.com/512/1239/1239525.png", // 你的自訂圖示
+      iconSize: [36, 36]
+    });
 
     function showPublicLogs() {
       db.collection("toiletLogs").where("public", "==", true).get().then(snapshot => {
@@ -149,13 +143,25 @@
           entry.innerHTML = `🚽 ${data.name} — <time>${data.time}</time><br>👤 ${data.user || "匿名"}<br>💬 ${data.comment || "（沒留言）"}`;
           log.appendChild(entry);
 
-          const icon = L.icon({ iconUrl: randomIconUrl(), iconSize: [36, 36] });
-
-          L.marker([data.lat, data.lng], { icon })
+          L.marker([data.lat, data.lng], { icon: customIcon })
             .addTo(map)
             .bindPopup(`<b>${data.name}</b><br>${data.comment || "沒留言"}<br><i>${data.time}</i><br>👤 ${data.user || "匿名"}`);
         });
       });
+    }
+
+    function showMyPrivateLogs(uid) {
+      db.collection("toiletLogs")
+        .where("public", "==", false)
+        .where("uid", "==", uid)
+        .get().then(snapshot => {
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            L.marker([data.lat, data.lng], { icon: customIcon })
+              .addTo(map)
+              .bindPopup(`<b>${data.name}</b><br>${data.comment || "沒留言"}<br><i>${data.time}</i><br>👤 ${data.user || "匿名"}`);
+          });
+        });
     }
 
     const map = L.map('map').setView([25.033964, 121.564468], 16);
@@ -171,6 +177,7 @@
         map.setView([lat, lng], 17);
         L.marker([lat, lng]).addTo(map).bindPopup("你在這裡 💩").openPopup();
         showPublicLogs();
+        if (currentUser) showMyPrivateLogs(currentUser.uid);
       }, () => alert("無法取得 GPS 位置"));
     }
 
@@ -191,12 +198,13 @@
       const logData = {
         name, lat, lng, time, comment,
         public: isPublic,
-        user: currentNickname
+        user: currentNickname,
+        uid: currentUser.uid
       };
 
       db.collection("toiletLogs").add(logData).then(() => {
         alert("✅ 打卡成功！");
-        if (isPublic) location.reload();
+        location.reload();
       });
     });
 
@@ -238,6 +246,7 @@
         nicknameBox.style.display = 'block';
         userInfo.textContent = `👤 已登入：${user.displayName || user.email}`;
         loadNickname(user);
+        showMyPrivateLogs(user.uid);
       } else {
         currentUser = null;
         currentNickname = "匿名";
@@ -248,7 +257,6 @@
       }
     });
 
-    // PWA 安裝
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js').then(() => {
         console.log('✅ Service Worker 已註冊');
@@ -257,3 +265,4 @@
   </script>
 </body>
 </html>
+
