@@ -1,59 +1,103 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
 <head>
-  <meta charset="utf-8">
-  <title>搞笑多人廁所地圖</title>
+  <meta charset="UTF-8" />
+  <title>💩 ToiMap 打卡地圖</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     body {
       margin: 0;
       font-family: 'Comic Sans MS', cursive;
-      background: #fff3e6;
+      background: linear-gradient(135deg, #fff5e6, #ffe6f7);
+      color: #333;
     }
-    #map {
-      height: 70vh;
-      width: 100%;
-    }
-    #log {
+
+    header {
+      text-align: center;
+      background-color: #ffd6d6;
       padding: 10px;
-      background: #fff8dc;
-      height: 20vh;
-      overflow-y: auto;
-      border-top: 2px dashed #aaa;
+      font-size: 1.5em;
+      font-weight: bold;
+      border-bottom: 4px dashed #ff9999;
     }
-    .log-entry {
-      margin-bottom: 5px;
-    }
-    .log-entry time {
-      color: #555;
-      font-size: 0.9em;
-    }
+
     #user {
       padding: 10px;
-      background: #e6f7ff;
-      border-bottom: 2px dashed #aaa;
+      background: #ffefef;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
     }
-    #nicknameBox {
-      margin-top: 5px;
+
+    #map {
+      height: 60vh;
+      width: 100%;
+    }
+
+    #log {
+      padding: 10px;
+      background: #fff9f0;
+      height: 25vh;
+      overflow-y: auto;
+      border-top: 3px dotted #ffc0cb;
+    }
+
+    button {
+      background-color: #ffb3ec;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background-color: #ff85d0;
+    }
+
+    input {
+      border-radius: 6px;
+      padding: 4px 8px;
+      border: 1px solid #ccc;
+    }
+
+    .log-entry {
+      margin-bottom: 10px;
+      padding: 6px;
+      border-left: 3px solid #ffb3b3;
+      background: #fff;
+      border-radius: 8px;
+    }
+
+    .log-entry time {
+      font-size: 0.8em;
+      color: #666;
     }
   </style>
 </head>
 <body>
+  <header>💩 ToiMap 打卡地圖 - 可愛風</header>
+
   <div id="user">
-    <button id="loginBtn">🔐 登入</button>
-    <button id="logoutBtn" style="display:none">🚪 登出</button>
-    <span id="userInfo">尚未登入</span>
+    <div>
+      <button id="loginBtn">🔐 登入</button>
+      <button id="logoutBtn" style="display:none">🚪 登出</button>
+      <span id="userInfo">尚未登入</span>
+    </div>
     <div id="nicknameBox" style="display:none">
       👤 暱稱：<input id="nicknameInput" placeholder="輸入你的暱稱" />
       <button id="saveNickBtn">儲存</button>
     </div>
   </div>
+
   <div id="map"></div>
+
   <div id="log"><strong>🧻 打卡紀錄（公開）：</strong><br></div>
 
-  <!-- Leaflet -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
