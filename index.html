@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>搞笑廁所地圖</title>
+  <title>搞笑多人廁所地圖</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     body {
@@ -28,118 +28,57 @@
       color: #555;
       font-size: 0.9em;
     }
-    #formPopup {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: white;
-      padding: 15px;
-      border: 2px solid #ccc;
-      z-index: 999;
-      display: none;
-    }
-    #formPopup label {
-      display: block;
-      margin-bottom: 5px;
-    }
   </style>
 </head>
 <body>
   <div id="map"></div>
-  <div id="log"><strong>🧻 打卡紀錄：</strong><br></div>
+  <div id="log"><strong>🧻 打卡紀錄（公開）：</strong><br></div>
 
-  <div id="formPopup">
-    <label>廁所名稱：<input type="text" id="toiletName" /></label>
-    <label>圖示：
-      <select id="iconSelect">
-        <option value="toilet">🚽 馬桶</option>
-        <option value="smile">😄 笑臉</option>
-        <option value="poop">💩 大便</option>
-      </select>
-    </label>
-    <button onclick="confirmAdd()">新增</button>
-    <button onclick="cancelAdd()">取消</button>
-  </div>
-
+  <!-- Leaflet 地圖 -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
   <script>
+    // 🔥 Firebase 設定
+    const firebaseConfig = {
+      apiKey: "AIzaSyArq2nPq66pH1eWq8_3gu5f952IUCu-H5s",
+      authDomain: "toiletmap-e8e4a.firebaseapp.com",
+      projectId: "toiletmap-e8e4a",
+      storageBucket: "toiletmap-e8e4a.firebasestorage.app",
+      messagingSenderId: "500560456842",
+      appId: "1:500560456842:web:fa72bd07525b983a32d173"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const log = document.getElementById('log');
+
+    function showPublicLogs() {
+      db.collection("toiletLogs").where("public", "==", true).get().then(snapshot => {
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const entry = document.createElement("div");
+          entry.className = "log-entry";
+          entry.innerHTML = `🚽 ${data.name} — <time>${data.time}</time><br>💬 ${data.comment || "（沒留言）"}`;
+          log.appendChild(entry);
+
+          // 在地圖上加公開打卡地標
+          L.marker([data.lat, data.lng])
+            .addTo(map)
+            .bindPopup(`<b>${data.name}</b><br>${data.comment || "沒留言"}<br><i>${data.time}</i>`);
+        });
+      });
+    }
+
     const map = L.map('map').setView([25.033964, 121.564468], 16);
-    let clickedLatLng = null;
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '© OpenStreetMap'
     }).addTo(map);
-
-   const icons = {
-  toilet: L.icon({
-    iconUrl: 'https://cdn-icons-png.flaticon.com/512/1180/1180880.png',
-    iconSize: [40, 40],
-    iconAnchor: [20, 40],
-    popupAnchor: [0, -40]
-  }),
-  smile: L.icon({
-    iconUrl: 'https://cdn-icons-png.flaticon.com/512/742/742751.png',
-    iconSize: [40, 40],
-    iconAnchor: [20, 40],
-    popupAnchor: [0, -40]
-  }),
-  poop: L.icon({
-    iconUrl: 'https://cdn-icons-png.flaticon.com/512/616/616408.png',
-    iconSize: [40, 40],
-    iconAnchor: [20, 40],
-    popupAnchor: [0, -40]
-  }),
-};
-
-    const log = document.getElementById('log');
-
-    function addLog(name) {
-      const time = new Date().toLocaleString();
-      const entry = document.createElement('div');
-      entry.className = 'log-entry';
-      entry.innerHTML = `🚽 ${name} — <time>${time}</time>`;
-      log.appendChild(entry);
-
-      const history = JSON.parse(localStorage.getItem('toiletLogs') || '[]');
-      history.push({ name, time });
-      localStorage.setItem('toiletLogs', JSON.stringify(history));
-    }
-
-    function loadLogs() {
-      const history = JSON.parse(localStorage.getItem('toiletLogs') || '[]');
-      history.forEach(({ name, time }) => {
-        const entry = document.createElement('div');
-        entry.className = 'log-entry';
-        entry.innerHTML = `🚽 ${name} — <time>${time}</time>`;
-        log.appendChild(entry);
-      });
-    }
-
-    loadLogs();
-
-    function addToiletMarker(lat, lng, name, icon) {
-      L.marker([lat, lng], { icon })
-        .addTo(map)
-        .bindPopup(`<b>${name}</b><br><button onclick="addLog('${name}')">我要打卡</button>`);
-    }
-
-    function saveCustomToilet(name, lat, lng, iconKey) {
-      const list = JSON.parse(localStorage.getItem('customToilets') || '[]');
-      list.push({ name, lat, lng, iconKey });
-      localStorage.setItem('customToilets', JSON.stringify(list));
-    }
-
-    function loadCustomToilets() {
-      const list = JSON.parse(localStorage.getItem('customToilets') || '[]');
-      list.forEach(t => {
-        const icon = icons[t.iconKey] || icons.toilet;
-        addToiletMarker(t.lat, t.lng, t.name, icon);
-      });
-    }
-
-    loadCustomToilets();
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(pos => {
@@ -160,52 +99,38 @@
         ];
 
         toilets.forEach(t => {
-          addToiletMarker(t.lat, t.lng, t.name, icons.toilet);
+          const marker = L.marker([t.lat, t.lng])
+            .addTo(map)
+            .bindPopup(`
+              <b>${t.name}</b><br>
+              <button onclick="logToilet('${t.name}', ${t.lat}, ${t.lng})">我要打卡</button>
+            `);
         });
+
+        showPublicLogs();
+
       }, () => {
         alert("無法取得 GPS 位置");
       });
+    } else {
+      alert("你的瀏覽器不支援定位功能");
     }
 
-    // 點地圖出現表單
-    map.on('click', function(e) {
-      clickedLatLng = e.latlng;
-      document.getElementById('formPopup').style.display = 'block';
-    });
+    function logToilet(name, lat, lng) {
+      const comment = prompt("🧻 想留言嗎？（可以不填）");
+      const isPublic = confirm("👀 要公開這次打卡給其他人看到嗎？");
 
-   function confirmAdd() {
-  const name = document.getElementById('toiletName').value.trim();
-  const iconKey = document.getElementById('iconSelect').value;
+      const time = new Date().toLocaleString();
 
-  if (!name) {
-    alert("請輸入名稱！");
-    return;
-  }
+      const logData = {
+        name, lat, lng, time, comment,
+        public: isPublic
+      };
 
-  if (!clickedLatLng) {
-    alert("點擊地圖位置後才能新增！");
-    return;
-  }
-
-  const icon = icons[iconKey] || icons.toilet;
-
-  try {
-    addToiletMarker(clickedLatLng.lat, clickedLatLng.lng, name, icon);
-    saveCustomToilet(name, clickedLatLng.lat, clickedLatLng.lng, iconKey);
-
-    // 清空表單與 popup
-    document.getElementById('formPopup').style.display = 'none';
-    document.getElementById('toiletName').value = '';
-    clickedLatLng = null;
-  } catch (err) {
-    alert("新增時出錯了：" + err.message);
-    console.error(err);
-  }
-}
-
-    function cancelAdd() {
-      document.getElementById('formPopup').style.display = 'none';
-      document.getElementById('toiletName').value = '';
+      db.collection("toiletLogs").add(logData).then(() => {
+        alert("✅ 打卡成功！");
+        if (isPublic) location.reload(); // 重新整理以顯示新打卡
+      });
     }
   </script>
 </body>
