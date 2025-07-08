@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#ffb3ec">
+  <meta name="theme-color" content="#d2b48c">
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="images/icon.png">
   <title>LooLoop</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
@@ -96,12 +97,17 @@
 
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js')
-        .then(() => console.log("✅ Service Worker Registered"));
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+          .then(reg => console.log("✅ Service Worker 註冊成功", reg))
+          .catch(err => console.error("❌ Service Worker 註冊失敗", err));
+      });
     }
   </script>
 
-  <!-- 你原本的 Firebase 和 App 主程式 -->
-  <script src="script.js"></script>
+  <!-- 你的 Firebase 與主邏輯原本已有，這裡略過 -->
+  <!-- 你可以將 Firebase 設定與主 JS 檔拆開成 app.js，再在這裡引用 -->
+  <script src="app.js"></script>
 </body>
 </html>
+
