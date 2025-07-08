@@ -1,16 +1,13 @@
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open('looloop-cache').then(cache => {
+    caches.open('LooLoop-cache').then(cache => {
       return cache.addAll([
         './',
         './index.html',
         './manifest.json',
-        './icon-192.png',
-        './icon-512.png',
+        './images/icon.png',
         './style.css',
-        './script.js',
-        'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-        'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+        './app.js'
       ]);
     })
   );
@@ -18,9 +15,7 @@ self.addEventListener('install', e => {
 
 self.addEventListener('fetch', e => {
   e.respondWith(
-    caches.match(e.request).then(response => {
-      return response || fetch(e.request);
-    })
+    caches.match(e.request).then(res => res || fetch(e.request))
   );
 });
 
