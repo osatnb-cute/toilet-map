@@ -1,10 +1,14 @@
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open('toimap-cache').then(cache => {
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open('looloop-cache').then(cache => {
       return cache.addAll([
-        '/',
-        'index.html',
-        'manifest.json',
+        './',
+        './index.html',
+        './manifest.json',
+        './icon-192.png',
+        './icon-512.png',
+        './style.css',
+        './script.js',
         'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
         'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
       ]);
@@ -12,8 +16,11 @@ self.addEventListener('install', event => {
   );
 });
 
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request).then(res => res || fetch(event.request))
+self.addEventListener('fetch', e => {
+  e.respondWith(
+    caches.match(e.request).then(response => {
+      return response || fetch(e.request);
+    })
   );
 });
+
